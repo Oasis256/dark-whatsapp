@@ -6,14 +6,21 @@
 @supportURL   https://github.com/vednoc/dark-whatsapp/issues
 @updateURL    https://raw.githubusercontent.com/vednoc/dark-whatsapp/master/wa.user.styl
 @author       vednoc <vednoc@pm.me> (https://github.com/vednoc)
-@version      2.13.0
+@version      2.15.0
 @license      MIT
 @preprocessor stylus
 
 @var checkbox v3         '[Dev]: Enable v3 mode        ' 1
+
+@var select   theme      'Base color-scheme toggle' {
+    'Custom colors   *': 'custom',
+    'Dark blue (old)  ': 'old',
+    'Dark gray (new)  ': 'new',
+}
 @var color    next_bg    '[Dev]: Base background color ' #1f232a
 @var color    next_fg    '[Dev]: Base foreground color ' #eeeeee
 @var color    next_ac    '[Dev]: Base accent color     ' #7289da
+@var range    next_bg_a  '[Dev]: Adjust tones for background color' [0, -25, 25, 0.1, '%']
 @var checkbox ow_imsg    'Override incoming message bubble color' 0
 @var color    next_imsg  '[Dev]: Incoming message bubble color' #16191e
 @var checkbox ow_omsg    'Override outgoing message bubble color' 0
@@ -25,13 +32,18 @@
 @var range    radius-a   'Custom rounded corners for avatars' [50, 0, 50, 1, '%']
 @var text     app_width  'Custom width for chat app' 1396px
 @var checkbox fullscreen 'Enable fullscreen mode' 0
-@var checkbox app_c_h    'Enable consistent drawer headers' 1
 @var checkbox app_c_m    'Enable compact mode' 1
 @var text     app_c_m_w  'Compact mode breakpoint' 720px
 @var text     app_c_m_h  'Compact mode hover-on delay' 0.6s
 @var text     app_c_m_d  'Compact mode hover-off delay' 1.2s
 
 @var checkbox chat_b_c   'Enable blurred contacts' 0
+@var checkbox app_c_h    'Enable consistent drawer headers' 1
+@var select   alerts     'Alerts' {
+    'Show all                   *': 'show          ',
+    'Hide "Allow notifications"  ': 'notifications ',
+    'Hide all                    ': 'hide          ',
+}
 
 @var select   app_image  'Custom app background' {
     'Theme image with 12px blur   *': 'bg-high ',
@@ -63,21 +75,16 @@
 @var text     chat_bg_p  'Chat background image position' top left
 @var text     chat_bg_r  'Chat background image repeat' repeat
 
+@var checkbox rtl_header 'RTL: Remove empty message header' 1
+@var checkbox rtl_format 'RTL: Fix formatting for message content' 1
+
+@var checkbox c_g_c      'Theme colors for replies and group members' 1
 
 @var text     divider    '⚠‼ IMPORTANT: Everything below is BROKEN' ''WIP''
 
 @var checkbox chat_b_img 'Enable blurred images/videos' 0
 @var text     chat_b_in  'Images/videos hover-on delay' 0.4s
 @var text     chat_b_out 'Images/videos hover-off delay' 0.2s
-
-@var select   alerts     'Alerts' {
-    'Show all                   *': 'show          ',
-    'Hide "Allow notifications"  ': 'notifications ',
-    'Hide all                    ': 'hide          ',
-}
-
-@var checkbox rtl_header 'RTL: Remove empty message header' 1
-@var checkbox rtl_format 'RTL: Fix formatting for message content' 1
 
 @var select   chat_m_t   'Message tails style' {
     'Default  *': 'default ',
@@ -101,14 +108,6 @@
 @var color    b_r_bg     'Right message bubble color' #333a47
 
 @var checkbox ss_mode    '[Dev]: Screenshot mode' 0
-
-@var checkbox c_g_c      'Theme colors in groups' 1
-
-@var select   theme      'Color-scheme' {
-    'Dark blue (old) *': 'old',
-    'Dark gray (new)  ': 'new',
-    'Custom colors    ': 'custom',
-}
 
 @var color    _dark      'Color: Primary background   ' #1f232a
 @var color    _darken    'Color: Highlight background ' #252A33
@@ -141,10 +140,17 @@ c(x, y = 0, z = 0, xi = 1, yi = 1, zi = 1) {
 
 // V3 check.
 if ( v3 == 1 ) {
+
 // Raw RGB mixin.
 /// Convert HEX to raw rrr-ggg-bbb format.
 to_rgb(input) {
     unquote(slice(s('%s', rgba(input, 0)), 5, -3))
+}
+
+// Raw RGBA mixin.
+/// Combine `*-rgb` vars and alpha value.
+to_rgba(input, alpha) {
+    unquote(s('rgba(var(--%s-rgb), %s)', unquote(input), alpha))
 }
 
 // Convert to SVG-friendly colors.
@@ -158,14 +164,27 @@ rad() { border-radius: arguments }
 /// Remove browser prefixes.
 vendors = official
 
+/// Feat -> Base color-scheme toggle. #32
+if (theme == 'custom') {
+    BG = next_bg
+    FG = next_fg
+    AC = next_ac
+} else if (theme == 'old') {
+    BG = #1f232a
+    FG = #eeeeee
+    AC = #7289da
+} else if (theme == 'new') {
+    BG = #292929
+    FG = #e6e6e6
+    AC = #d47d3f
+}
+
 /// Helper variables.
 t  = transparent
 i  = !important
 _d = darken
 _l = lighten
-BG = next_bg
-FG = next_fg
-AC = next_ac
+BA = next_bg_a
 IM = next_imsg
 OM = next_omsg
 
@@ -173,7 +192,7 @@ OM = next_omsg
 /// TODO: Needs more polish.
 if(dark(BG)) {
     a1 =  10%; a2 =  20%; a3 =  30%; a4 =  78%; a5 =  88%;
-    b1 =  10%; b2 = -05%; b3 = -10%; b4 = -15%; b5 = -20%;
+    b1 = (BA + 10); b2 = (BA - 5); b3 = (BA - 10); b4 = (BA - 15); b5 = (BA - 20)
     f1 = -10%; f2 =  06%; f3 =  12%; f4 =  24%; f5 =  40%;
 } else {
     a1 =  10%; a2 =  15%; a3 =  30%; a4 =  60%; a5 =  70%;
@@ -249,10 +268,9 @@ ac5 = var(--ac-5)
 @-moz-document domain('web.whatsapp.com') {
     :root:not(#z), .dark:not(#z) {
         /// Userstyle info and announcements.
-        --version: 'Dark-WhatsApp 2.13.0 — June 16th, 2020';
-        --message: 'Towards v3 of DWA! Continuing the trend of porting old ' + \
-                   'features to the latest update; check the changelog to' + \
-                   'see what is new!';
+        --version: 'Dark-WhatsApp 2.15.0 — June 25th, 2020';
+        --message: 'Towards v3 of DWA! Porting more features, and improving' + \
+                   ' more things; check the changelog to see what is new!';
         --changes: '\A\A https://github.com/vednoc/dark-whatsapp';
 
         /// Custom UI font.
@@ -274,7 +292,7 @@ ac5 = var(--ac-5)
         /// Custom emoji opacity.
         --emoji-o: emoji_o
 
-        /// Feat -> Custom app background.
+        /// Custom app background.
         image_path  = 'https://raw.githubusercontent.com/'
         image_path += 'vednoc/dark-whatsapp/master/images/bg-blur'
         if ( app_image == bg-high ) {
@@ -297,7 +315,7 @@ ac5 = var(--ac-5)
         --bg-pos:     bg_pos
         --bg-rep:     bg_rep
 
-        /// Feat -> Custom chat background.
+        /// Custom chat background.
         --chat-image: chat_image
         --chat-bg-o:  chat_bg_o
         --chat-bg-i:  chat_bg_i
@@ -305,7 +323,7 @@ ac5 = var(--ac-5)
         --chat-bg-p:  chat_bg_p
         --chat-bg-r:  chat_bg_r
 
-        /// Feat -> Override incoming message bubble colors.
+        /// Override incoming message bubble colors.
         if (ow_imsg) {
             --msg-in-0:     msg-in-0 i
             --msg-in-0-rgb: to_rgb(msg-in-0)
@@ -318,7 +336,7 @@ ac5 = var(--ac-5)
             --msg-in-1-rgb: var(--bg-3-rgb)
         }
 
-        /// Feat -> Override outgoing message bubble colors.
+        /// Override outgoing message bubble colors.
         if (ow_omsg) {
             --msg-out-0:     msg-out-0 i
             --msg-out-0-rgb: to_rgb(msg-out-0)
@@ -332,6 +350,8 @@ ac5 = var(--ac-5)
         }
 
         /// WA variables.
+        --gray-30: var(--bg-5) //#f7f7f7;
+        --gray-30-rgb: var(--bg-5-rgb) //247,247,247;
         --teal: var(--ac-0) //#009688;
         --teal-rgb: var(--ac-0-rgb) //0,150,136;
         --teal-light: var(--ac-1) //#1de9b6;
@@ -362,8 +382,8 @@ ac5 = var(--ac-5)
         --audio-track-outgoing-rgb: var(--fg-4-rgb) //29,88,82;
         --avatar-background: var(--bg-1) //#101d24;
         --avatar-background-rgb: var(--bg-1-rgb) //16,29,36;
-        --avatar-border: var(--fg-3) //#a5aaad;
-        --avatar-border-rgb: var(--fg-3-rgb) //165,170,173;
+        --avatar-border: var(--bg-3) //#a5aaad;
+        --avatar-border-rgb: var(--bg-3-rgb) //165,170,173;
         --avatar-placeholder-background: var(--bg-5) //#6c7478;
         --avatar-placeholder-background-rgb: var(--bg-5-rgb) //108,116,120;
         --avatar-placeholder-primary: var(--fg-3) //#d6d8d9;
@@ -452,20 +472,24 @@ ac5 = var(--ac-5)
         --checkbox-mark-rgb: var(--white-rgb) //16,29,36;
         --compose-background: var(--bg-1) //#101d24;
         --compose-background-rgb: var(--bg-1-rgb) //16,29,36;
-        --compose-background-focused: #203946;
-        --compose-background-focused-rgb: 32,57,70;
-        --compose-border-focused: #274656;
-        --compose-border-focused-rgb: 39,70,86;
+        --compose-background-focused: var(--bg-0) //#203946;
+        --compose-background-focused-rgb: var(--bg-0-rgb) //32,57,70;
+        --compose-border: var(--bg-5) //#2f3437;
+        --compose-border-rgb: var(--bg-5-rgb) //47.1,51.86667,54.9;
+        --compose-border-focused: var(--bg-5) //#274656;
+        --compose-border-focused-rgb: var(--bg-5-rgb) //39,70,86;
         --compose-panel-background: var(--bg-3) //#222e35;
         --compose-panel-background-rgb: var(--bg-3-rgb) //34,46,53;
+        --compose-primary: var(--fg-1) //#f1f1f2;
+        --compose-primary-rgb: var(--fg-1-rgb) //241,241,242;
         --conversation-panel-background: var(--bg-1) //#0b1419;
         --conversation-panel-background-rgb: var(--bg-1-rgb) //11.29231,20.46731,25.40769;
         --conversation-panel-border: var(--bg-5) //#f1f1f214;
         --conversation-panel-border-rgb: var(--fg-3-rgb) //241,241,242;
         --danger: var(--red) //#ef697a;
         --danger-rgb: var(--red-rgb) //239,105,122;
-        --drawer-background: var(--bg-3) //#101d24;
-        --drawer-background-rgb: var(--bg-3-rgb) //16,29,36;
+        --drawer-background: var(--bg-1) //#101d24;
+        --drawer-background-rgb: var(--bg-1-rgb) //16,29,36;
         --drawer-background-deep: var(--bg-0) //#080e12;
         --drawer-background-deep-rgb: var(--bg-0-rgb) //8,14,18;
         --drawer-gallery-background: var(--bg-1) //#101d24;
@@ -480,8 +504,8 @@ ac5 = var(--ac-5)
         --dropdown-background-hover-rgb: var(--bg-3-rgb) //32,44,51;
         --empty-state-background: var(--bg-3) //#1c282f;
         --empty-state-background-rgb: var(--bg-3-rgb) //28,40,47;
-        --empty-state-icon: #757c81;
-        --empty-state-icon-rgb: 117,124,129;
+        --empty-state-icon: var(--fg-4) //#757c81;
+        --empty-state-icon-rgb: var(--fg-4-rgb) //117,124,129;
         --focus: var(--ac-3) //#68bbe4;
         --focus-rgb: var(--ac-3-rgb) //104,187,228;
         --focus-animation: var(--ac-3) //#68bbe442;
@@ -522,8 +546,10 @@ ac5 = var(--ac-5)
         --intro-background-rgb: var(--bg-1-rgb) //34,46,53;
         --intro-border: var(--ac-3) //#054740;
         --intro-border-rgb: var(--ac-3-rgb) //5,71,64;
+        --intro-secondary: var(--fg-3) //#a6a8aa;
+        --intro-secondary-rgb: var(--fg-3-rgb) //166,168,170;
         --inverse: #f1f1f2;
-        --inverse-rgb: var(--fg-3-rgb) //241,241,242;
+        --inverse-rgb: var(--fg-0-rgb) //241,241,242;
         --labels-icon: #f1f1f266;
         --labels-icon-rgb: var(--fg-3-rgb) //241,241,242;
         --link: var(--ac-0) //#68bbe4;
@@ -538,7 +564,7 @@ ac5 = var(--ac-5)
         --location-cluster-background-rgb: var(--bg-1-rgb) //16,29,36;
         --media-editor-control: #1c313f;
         --media-editor-control-rgb: 28,49,63;
-        --media-viewer-background: s('rgba(var(--bg-1-rgb), 0.95)') //#101d24fa;
+        --media-viewer-background: to_rgba('bg-1', 0.80) //#101d24fa;
         --media-viewer-background-rgb: var(--bg-1-rgb) //16,29,36;
         --media-viewer-button-background: var(--bg-3) //#1c282f;
         --media-viewer-button-background-rgb: var(--bg-3-rgb) //28,40,47;
@@ -548,18 +574,20 @@ ac5 = var(--ac-5)
         --menu-tabs-list-active-rgb: var(--ac-0-rgb) //0,175,156;
         --message-background-deep: var(--bg-0) //#080e1259;
         --message-background-deep-rgb: var(--bg-0-rgb) //8,14,18;
-        --message-placeholder-icon: #cccccc4d;
-        --message-placeholder-icon-rgb: 204,204,204;
-        --message-selection-highlight: s('rgba(var(--ac-0-rgb), 0.1)') //#f1f1f20d;
+        --message-placeholder-icon: var(--fg-3) //#cccccc4d;
+        --message-placeholder-icon-rgb: var(--fg-3-rgb) //204,204,204;
+        --message-primary: var(--fg-1) //#f1f1f2f2;
+        --message-primary-rgb: var(--fg-1-rgb) //241,241,242;
+        --message-selection-highlight: to_rgba('ac-0', 0.1) //#f1f1f20d;
         --message-selection-highlight-rgb: var(--ac-0-rgb) //241,241,242;
-        --modal-backdrop: s('rgba(var(--bg-0-rgb), 0.95)') //#080e12d9;
+        --modal-backdrop: to_rgba('bg-1', 0.70) //#080e12d9;
         --modal-backdrop-rgb: var(--bg-0-rgb) //8,14,18;
         --modal-backdrop-solid: var(--bg-0) //#1c282f;
         --modal-backdrop-solid-rgb: var(--bg-0-rgb) //28,40,47;
         --modal-background: var(--bg-2) //#364147;
         --modal-background-rgb: var(--bg-2-rgb) //54,65,71;
-        --notification-biz-background: var(--bg-3) //#1c282f;
-        --notification-biz-background-rgb: var(--bg-3-rgb) //28,40,47;
+        --notification-biz-background: var(--bg-0) //#1c282f;
+        --notification-biz-background-rgb: var(--bg-0-rgb) //28,40,47;
         --notification-biz-text: #55fad9;
         --notification-biz-text-rgb: 85,250,217;
         --notification-e2e-background: var(--bg-0) //#1c282f;
@@ -590,15 +618,15 @@ ac5 = var(--ac-5)
         --panel-background-deep-rgb: var(--bg-2-rgb) //22,32,38;
         --panel-background-deeper: var(--bg-3) //#1a252c;
         --panel-background-deeper-rgb: var(--bg-3-rgb) //26,37,44;
-        --panel-background-hover: #1b272e;
-        --panel-background-hover-rgb: 27,39,46;
+        --panel-background-hover: var(--bg-4) //#1b272e;
+        --panel-background-hover-rgb: var(--bg-4-rgb) //27,39,46;
         --panel-background-lighter: var(--bg-3) //#1a252c;
         --panel-background-lighter-rgb: var(--bg-3-rgb) //26,37,44;
         --panel-header-background: var(--bg-3) //#222e35;
         --panel-header-background-rgb: var(--bg-3-rgb) //34,46,53;
         --panel-header-icon: var(--fg-3) //#9ea3a6;
         --panel-header-icon-rgb: var(--fg-3-rgb) //158,163,166;
-        --panel-primary: #f1f1f259;
+        --panel-primary: var(--fg-3) //#f1f1f259;
         --panel-primary-rgb: var(--fg-3-rgb) //241,241,242;
         --payment-amount: #00a593;
         --payment-amount-rgb: 0,164.8,146.90743;
@@ -610,8 +638,8 @@ ac5 = var(--ac-5)
         --payment-status-success-rgb: 64,207,108;
         --payment-status-waiting: var(--fg-1) //#f1f1f273;
         --payment-status-waiting-rgb: var(--fg-3-rgb) //241,241,242;
-        --photopicker-overlay-background: #212c31cc;
-        --photopicker-overlay-background-rgb: 33,44,49;
+        --photopicker-overlay-background: to_rgba('bg-3', 0.8) //#212c31cc;
+        --photopicker-overlay-background-rgb: var(--bg-3-rgb) //33,44,49;
         --popup-panel-background: var(--bg-2) //#080e1233;
         --popup-panel-background-rgb: var(--bg-2-rgb) //8,14,18;
         --primary: var(--fg-2) //#a5aaad;
@@ -624,8 +652,12 @@ ac5 = var(--ac-5)
         --primary-title-rgb: var(--fg-2-rgb) //212,213,215;
         --product-thumb-background: var(--bg-3) //#1c282f;
         --product-thumb-background-rgb: var(--bg-3-rgb) //28,40,47;
-        --product-thumb-background-deeper: #2b3e49;
-        --product-thumb-background-deeper-rgb: 43.232,61.76,72.568;
+        --product-thumb-background-deeper: var(--bg-2) //#2b3e49;
+        --product-thumb-background-deeper-rgb: var(--bg-2-rgb) //43.232,61.76,72.568;
+        --progress-background: var(--bg-2) //#2a2f32;
+        --progress-background-rgb: var(--bg-2-rgb) //41.6,47.46667,50.4;
+        --progress-primary: var(--ac-0) //#0c897c;
+        --progress-primary-rgb: var(--ac-0) //12,137,124;
         --ptt-blue: var(--blue) //#4fc3f7;
         --ptt-blue-rgb: var(--blue-rgb) //79,195,247;
         --ptt-button-cancel: var(--red) //#e53935cc;
@@ -638,12 +670,14 @@ ac5 = var(--ac-5)
         --ptt-green-rgb: var(--green) //9,210,97;
         --ptt-message-blue: var(--blue) //#68bbe4;
         --ptt-message-blue-rgb: var(--blue-rgb) //104,187,228;
-        --quick-action-button: var(--fg-3) //#f1f1f280;
+        --quick-action-button: to_rgba('fg-3', 0.5) //#f1f1f280;
         --quick-action-button-rgb: var(--fg-3-rgb) //241,241,242;
         --quick-action-button-background: var(--bg-4) //#080e1299;
         --quick-action-button-background-rgb: var(--bg-4-rgb) //8,14,18;
         --rich-text-panel-background: var(--bg-3) //#1c282f;
         --rich-text-panel-background-rgb: var(--bg-3-rgb) //28,40,47;
+        --search-input-background: var(--bg-3) //#2a2f32;
+        --search-input-background-rgb: var(--bg-3-rgb) //41.6,47.46667,50.4;
         --secondary: var(--fg-3) //#f1f1f299;
         --secondary-rgb: var(--fg-3-rgb) //241,241,242;
         --secondary-light: var(--fg-2) //#f1f1f240;
@@ -664,6 +698,8 @@ ac5 = var(--ac-5)
         --spinner-incoming-rgb: var(--fg-5-rgb) //96,105,110;
         --spinner-outgoing: var(--ac-5) //#4c7a75;
         --spinner-outgoing-rgb: var(--ac-5-rgb) //76,122,117;
+        --startup-background: var(--bg-0) //#131c21;
+        --startup-background-rgb: var(--bg-0-rgb) //18.6,28.22,33.4;
         --status-background: var(--bg-1) //#000;
         --status-background-rgb: var(--bg-1-rgb) //0,0,0;
         --status-background-hover: var(--bg-2) //#242424;
@@ -680,8 +716,8 @@ ac5 = var(--ac-5)
         --suspicious-background-rgb: 239,105,122;
         --system-message-background: var(--ac-5) //#1e2a30;
         --system-message-background-rgb: var(--ac-5-rgb) //30,42,48;
-        --system-message-text: var(--fg-1) //#f1f1f2de;
-        --system-message-text-rgb: 241,241,242;
+        --system-message-text: to_rgba('fg-1', 0.87) //#f1f1f2de;
+        --system-message-text-rgb: var(--fg-1-rgb) //241,241,242;
         --teal-hover: #00b7a1;
         --teal-hover-rgb: 0,183,161;
         --teal-pale: #5fc8bc;
@@ -690,15 +726,15 @@ ac5 = var(--ac-5)
         --thumb-border-active-rgb: var(--bg-2-rgb) //117,120,122;
         --thumb-border-viewer-active: var(--fg-3) //#75787a;
         --thumb-border-viewer-active-rgb: var(--fg-3-rgb) //117,120,122;
-        --toast-background: var(--bg-3) //#080e12f5;
+        --toast-background: to_rgba('bg-3', 0.96) //#080e12f5;
         --toast-background-rgb: var(--bg-3-rgb) //8,14,18;
-        --tooltip-background: var(--bg-1) //#595959d9;
-        --tooltip-background-rgb: var(--bg-1) //89.25,89.25,89.25;
+        --tooltip-background: to_rgba('bg-4', 0.85) //#595959d9;
+        --tooltip-background-rgb: var(--bg-4) //89.25,89.25,89.25;
         --typing: var(--ac-0) //#00af9c;
         --typing-rgb: var(--ac-0-rgb) //0,175,156;
         --unread-background: var(--bg-3) //#1c282f;
         --unread-background-rgb: var(--bg-3-rgb) //28,40,47;
-        --unread-bar-background: var(--bg-0) //#080e124d;
+        --unread-bar-background: to_rgba('bg-0', 0.7) //#080e124d;
         --unread-bar-background-rgb: var(--bg-0-rgb) //8,14,18;
         --unread-marker-background: var(--ac-0) //#00af9c;
         --unread-marker-background-rgb: var(--ac-0-rgb) //0,175,156;
@@ -785,6 +821,8 @@ ac5 = var(--ac-5)
         background-image: none i
         c: fg0 0 bg0
 
+        option { c: fg1 0 bg3 }
+
         /// Feat -> Custom font.
         &, button, input { font-family: var(--ui-font) }
 
@@ -837,25 +875,54 @@ ac5 = var(--ac-5)
         /// Settings -> Tweaks for 'Set Chat Wallpaper' area. #149
         /[style *= 'd-color: rgb(237\, 233\, 228)'] {
             position: relative
+            c: 0 0 bg1
+
+            /// Override selected wallpaper.
+            --blue-light: ac3
+            --inverse: ac3
+
+            /// Add pseudo text.
             &::before {
-                content: 'Use this with Dark-WhatsApp'
+                content: ''
+                filter: invert(var(--chat-bg-i)) opacity(var(--chat-bg-o))
+                background: var(--chat-image) i
                 position: absolute
-                font-size: 15px
+                height: 100%
                 width: 100%
-                c: black
+            }
+
+            /// Expand default chat wallpaper.
+            &:first-child {
+                border: 4px solid bg3 i
+                &, &::after { width: calc(3 * 82px + 30px) i }
+                span {
+                    font-size: 0 i
+                    &::before {
+                        content: 'Use this with Dark-WhatsApp'
+                        font-size: 16px i
+                    }
+                }
+            }
+
+            /// Override light gray wallpapers.
+            /[style *= 'rgb(222\, 227\, 233)'],
+            /[style *= 'rgb(217\, 218\, 222)'],
+            /[style *= 'rgb(192\, 193\, 196)'] {
+                border: 4px solid bg3 i
+                c: 0 0 bg1
             }
         }
 
         /// Global -> Scrollbar styles.
         /\*{
             /// Feat -> Thin scrollbar in Firefox.
-            if ( ff_scroll == 1 ) {
+            if (ff_scroll) {
                 @supports (scrollbar-width: thin) {
                     scrollbar-width: thin i
                 }
             }
 
-            /// Theme colors.
+            /// Scrollbar colors.
             @supports (scrollbar-width: thin) {
                 scrollbar-color: ac3 #88888810 i
             }
@@ -870,10 +937,18 @@ ac5 = var(--ac-5)
     ._1BjNO[style] {
         /// Global/shared contacts.
         &, /._1S7ke { c: 0 0 bg5 }
-        /// Avatars/images/new group/shared contacts.
-        &, > img, /._18cLH, /._3_Hvt, /._2H1bg, /._1S7ke {
+
+        /// Avatars/images/new group/shared contacts/contact avatar.
+        &, > img, /._18cLH, /._3_Hvt, /._2H1bg, /._1S7ke, /._2SNSv {
             rad: var(--r-avatars) i
         }
+
+        /// Add rounded corners to the default group SVG avatar.
+        /.Ao0On { c: 0 0 bg5 }
+
+        /// Fix 'new group' bottom divider to hide drawer background-color.
+        /._1g1ui > ._1ByLM { margin-left: unset i }
+
         /// Tweak default-user icons.
         if ( radius-a != '50%' ) {
             /[style *= 'height: 26px'],
@@ -931,7 +1006,7 @@ ac5 = var(--ac-5)
             }
         }
 
-        /// -> Fix media selection.
+        /// Fix media selection.
         /._1KWct { c: 0 bg5 bg3 }
 
         /// Status area modal.
@@ -955,10 +1030,6 @@ ac5 = var(--ac-5)
                         rad: var(--r-menus) i
                     }
                 }
-
-                /// Bar/member colors.
-                /.color-1 { c: ac0 }
-                /.bg-color-1 { c: 0 0 ac0 }
             }
 
             /// Fill color for unread icon. @upstream
@@ -983,7 +1054,7 @@ ac5 = var(--ac-5)
         }
     }
 
-    // Loading.
+    // Loading page.
     [id *= 'startup'] {
         c: 0 0 bg0
 
@@ -1087,14 +1158,24 @@ ac5 = var(--ac-5)
                 background-position: var(--bg-pos) i
                 background-repeat: var(--bg-rep) i
                 background-size: var(--bg-size) i
+                content: '' i
             } else if ( app_image == default ) {
+                content: '' i
                 c: 0 0 bg1
             } else {
                 display: none
             }
             /// Remove image in fullscreen mode.
-            if ( fullscreen == 1 ) { content: none i }
+            if (fullscreen) { content: none i }
         }
+
+        /// Remove top border from the first Links/Docs message.
+        /div, /span {
+         div:first-child > .aGjYp::before { content: none }
+        }
+
+        /// Feat -> Input border radius.
+        ._3xpD_ { rad: var(--r-inputs) i }
 
         /// Dropdowns -> Chat/Header.
         > span > div, ._2s_eZ {
@@ -1119,9 +1200,7 @@ ac5 = var(--ac-5)
         #main > footer > .copyable-area {
             button:not([data-animate-menu-icons-item]), [role = 'button'] {
                 [data-icon] { transition: fill-opacity 0.3s ease i }
-                &:not(._3QjfB):hover {
-                    [data-icon] { fill-opacity: 0.6 i }
-                }
+                &:not(._3QjfB):hover [data-icon] { fill-opacity: 0.6 i }
             }
         }
     }
@@ -1131,24 +1210,23 @@ ac5 = var(--ac-5)
         c: 0 0 bg1
 
         @media (min-width: 1441px) {
-            /// Feat -> Custom app width.
-            &, /._11ARv {
-                width: calc(100% - 38px) i
-                max-width: var(--app-width) i
-            }
-
             /// Feat -> Fullscreen mode.
             if (fullscreen) {
-                &, /[data-animate-status-v3-modal-background] > div {
+                &, /[data-animate-status-v3-modal-background] > div:first-child {
                     width: 100% i
                     max-width: 100% i
                     height: 100% i
                     top: unset i
                 }
             } else {
-                rad: var(--r-menus) i
-                border: 1px solid bg5 i
-                box-shadow: var(--bshadow) i
+                /// Feat -> Custom width for app/status areas.
+                &, /[data-animate-status-v3-modal-background] > div:first-child {
+                    width: calc(100% - 38px) i
+                    max-width: var(--app-width) i
+                    rad: var(--r-menus) i
+                    border: 1px solid bg5 i
+                    box-shadow: var(--bshadow) i
+                }
             }
         }
 
@@ -1160,11 +1238,11 @@ ac5 = var(--ac-5)
             border-bottom: 1px solid bg5 i
             &::after { display: none i }
 
+            /// Align 'loading results' spinner inside input.
+            ._1pp2N { padding-right: 5px }
+
             /// Remove animation.
             /._1yO24 { animation: none i }
-
-            /// Feat -> Border radius.
-            label { rad: var(--r-inputs) i }
         }
 
         /// Left -> Resets.
@@ -1174,10 +1252,20 @@ ac5 = var(--ac-5)
 
                 /// Alerts.
                 + span > div {
-                    border-bottom: 1px solid bg5 i
-
                     /// Close icon for 'low battery' state.
                     [data-icon = 'x'] svg path { fill: fg5 }
+
+                    /// Feat -> Alerts.
+                    if (alerts == 'hide') {
+                        & > div { display: none i }
+                    } else if (alerts == 'notifications') {
+                        & > div {
+                            border-bottom: 1px solid bg5 i
+                            &._1evad { display: none i }
+                        }
+                    } else {
+                        border-bottom: 1px solid bg5 i
+                    }
                 }
             }
         }
@@ -1194,9 +1282,17 @@ ac5 = var(--ac-5)
             }
 
             /// Remove shadows from drawer sections.
-            /._2Bps4 {
-                box-shadow: 0 0 0 1px bg4 i
-            }
+            /._2Bps4 { box-shadow: 0 0 0 1px bg4 i }
+        }
+    }
+
+    // Global -> Icons.
+    span[class] {
+
+        /// Right -> Contact/group selected media drawer.
+        &[data-icon = 'checkbox-round-checked'] {
+            [fill = '#00BFA5'] { fill: ac0 }
+            [fill = '#FFF'] { fill: white }
         }
     }
 
@@ -1228,15 +1324,16 @@ ac5 = var(--ac-5)
         /// Feat -> Blur contacts.
         if (chat_b_c) {
             [style *= '0s; height'] {
+                /// Remove odd shadow.
                 > [aria-selected = 'true'] {
                     > div::after { display: none i }
                 }
+
+                /// Do the blur.
                 > :not([aria-selected = 'true']) {
                     overflow: hidden i
                     > div { transition: background, filter 300ms ease-in-out i }
-                    &:not(:hover) > div {
-                        filter: blur(6px)
-                    }
+                    &:not(:hover) > div { filter: blur(6px) }
                     &._1f1zm, &:hover { filter: blur(0px) }
                 }
             }
@@ -1255,6 +1352,23 @@ ac5 = var(--ac-5)
             &::after { content: unset i }
         }
 
+        /// System messages.
+        ._1E1g0 {
+            border: 1px solid to_rgba('fg-1', 0.3)
+
+            /// Tweak text shadow.
+            text-shadow: 0 1px 0 to_rgba('fg-1', 0.3)
+
+            /// End-to-end encryption message.
+            &._2n04H { border: 1px solid to_rgba('notification-e2e-text', 0.3) }
+
+            /// Bussiness account message.
+            &._2nH_- { border: 1px solid to_rgba('notification-biz-text', 0.3) }
+        }
+
+        /// Loading previous messages.
+        ._2J60S { border: 1px solid bg5 }
+
         /// Feat -> Custom chat background.
         /[data-asset-chat-background-light] {
             filter: invert(var(--chat-bg-i)) opacity(var(--chat-bg-o))
@@ -1265,11 +1379,11 @@ ac5 = var(--ac-5)
             opacity: 1 i
 
             /// Feat -> Show chat image.
-            if ( chat_bg != 1 ) { display: none i }
+            if (!chat_bg) { display: none i }
         }
 
         /// Tweak text shadow.
-        ._1E1g0 { text-shadow: 0 1px 0 s('rgba(var(--fg-3-rgb), 0.2)') }
+        ._1E1g0 { text-shadow: 0 1px 0 to_rgba('fg-3', 0.2) }
 
         /// Tweak 'unread messages' alert.
         ._9WQEN { border: none i }
@@ -1278,14 +1392,12 @@ ac5 = var(--ac-5)
         [class *= 'message-'][data-id] {
             /// Exclude stickers.
             > span + div:not(.urabC) > div {
-                box-shadow: 0 1px 0 s('rgba(var(--shadow-rgb), 0.33)') i
+                box-shadow: 0 1px 0 to_rgba('shadow', 0.33) i
             }
         }
 
         /// Fix context menu background for stickers.
-        .-AOZp ._2oA-- + div[style] {
-            c: 0 0 bg4
-        }
+        .-AOZp ._2oA-- + div[style] { c: 0 0 bg4 }
 
         /// Fix down arrow icon color for context menus.
         [data-js-context-icon = 'true'] { c: fg3 }
@@ -1295,7 +1407,7 @@ ac5 = var(--ac-5)
             /// Images.
             &._3yTyY, &._2CHFo {
                 padding: 2px 4px i
-                background-color: s('rgba(var(--bg-1-rgb), 0.7)') i
+                background-color: to_rgba('bg-1', 0.7) i
                 rad: 5px i
             }
 
@@ -1304,7 +1416,7 @@ ac5 = var(--ac-5)
                 /// Length/Timestamp.
                 .len7M, + ._2DfqO {
                     padding: 2px 4px i
-                    background-color: s('rgba(var(--bg-1-rgb), 0.7)') i
+                    background-color: to_rgba('bg-1', 0.7) i
                     rad: 5px i
                 }
 
@@ -1318,9 +1430,22 @@ ac5 = var(--ac-5)
 
         /// Footer.
         > footer {
-            /// Compose area wrapper.
-            > .copyable-area, [data-list-scroll-container] {
+            /// Compose border.
+            ../> header ~ div[style *= 'height: 0px'] {
                 border-top: 1px solid bg5 i
+            }
+
+            /// Popover border.
+            .velocity-animating,
+            div[style $= 'translateY(0%);'],
+            div[style $= 'translateY(0px);'] {
+                box-shadow: 0 -1px 0 bg5 i
+            }
+
+            /// Emoji quick-picker.
+            [data-list-scroll-container] {
+                border-bottom: 1px solid bg5 i
+                box-shadow: 0 -1px bg5 i
             }
 
             /// Chat -> Select messages.
@@ -1330,18 +1455,67 @@ ac5 = var(--ac-5)
             }
 
             /// Emoji group selection.
-            ._3eShu {
-                border-top: 1px solid bg5 i
-                border-bottom: 1px solid bg5 i
-            }
+            ._3eShu { border-bottom: 1px solid bg5 i }
 
-            /// Feat -> Border radius.
+            /// Feat -> Input border radius.
             ._3uMse { rad: var(--r-inputs) i }
         }
     }
 
+    /// Feat -> Colors for replies and group members.
+    if (c_g_c) {
+        :not(#z) .color {
+            &-0  { c: blue }
+            &-1  { c: cyan }
+            &-2  { c: green }
+            &-3  { c: violet }
+            &-4  { c: magenta }
+            &-5  { c: red }
+            &-6  { c: orange }
+            &-7  { c: yellow }
+            &-8  { c: blue; filter: hue-rotate(20deg) }
+            &-9  { c: cyan; filter: hue-rotate(20deg) }
+            &-10 { c: green; filter: hue-rotate(20deg) }
+            &-11 { c: violet; filter: hue-rotate(20deg) }
+            &-12 { c: magenta; filter: hue-rotate(20deg) }
+            &-13 { c: red; filter: hue-rotate(20deg) }
+            &-14 { c: orange; filter: hue-rotate(20deg) }
+            &-15 { c: yellow; filter: hue-rotate(20deg) }
+            &-15 { c: blue; filter: hue-rotate(40deg) }
+            &-16 { c: cyan; filter: hue-rotate(40deg) }
+            &-17 { c: green; filter: hue-rotate(40deg) }
+            &-18 { c: violet; filter: hue-rotate(40deg) }
+            &-19 { c: magenta; filter: hue-rotate(40deg) }
+            &-20 { c: red; filter: hue-rotate(40deg) }
+        }
+        :not(#z) .bg-color {
+            &-0  { c: 0 0 blue }
+            &-1  { c: 0 0 cyan }
+            &-2  { c: 0 0 green }
+            &-3  { c: 0 0 violet }
+            &-4  { c: 0 0 magenta }
+            &-5  { c: 0 0 red }
+            &-6  { c: 0 0 orange }
+            &-7  { c: 0 0 yellow }
+            &-8  { c: 0 0 blue; filter: hue-rotate(20deg) }
+            &-9  { c: 0 0 cyan; filter: hue-rotate(20deg) }
+            &-10 { c: 0 0 green; filter: hue-rotate(20deg) }
+            &-11 { c: 0 0 violet; filter: hue-rotate(20deg) }
+            &-12 { c: 0 0 magenta; filter: hue-rotate(20deg) }
+            &-13 { c: 0 0 red; filter: hue-rotate(20deg) }
+            &-14 { c: 0 0 orange; filter: hue-rotate(20deg) }
+            &-15 { c: 0 0 yellow; filter: hue-rotate(20deg) }
+            &-15 { c: 0 0 blue; filter: hue-rotate(40deg) }
+            &-16 { c: 0 0 cyan; filter: hue-rotate(40deg) }
+            &-17 { c: 0 0 green; filter: hue-rotate(40deg) }
+            &-18 { c: 0 0 violet; filter: hue-rotate(40deg) }
+            &-19 { c: 0 0 magenta; filter: hue-rotate(40deg) }
+            &-20 { c: 0 0 red; filter: hue-rotate(40deg) }
+        }
+    }
+
     // Feat -> Compact mode.
-    if ( app_c_m == 1 ) {
+    if (app_c_m) {
         /// Reset height/width if there is an overflow.
         #app > div > [tabindex] {
             @media screen and (max-height: 500px) { min-height: auto }
@@ -1481,6 +1655,43 @@ ac5 = var(--ac-5)
                 }
                 /// I _think_ I understand why this works!
                 ._2kHpK { min-width: 80px i }
+            }
+        }
+    }
+
+    // Main -> Chat message bubbles.
+    .message {
+        /// Feat -> Fixes for RTL layout. @upstream
+        if (rtl_header) {
+            &-in, &-out {
+                .selectable-text.invisible-space[dir = 'rtl'],
+                /// Some links have TWO empty headers.
+                a.selectable-text[href],
+                /// Embedded links are special snowflakes, too.
+                .eRacY[dir = 'ltr'] > [dir = 'ltr'] {
+                    &::before { content: unset i }
+                }
+            }
+        }
+        if (rtl_format) {
+            &-in, &-out {
+                [data-pre-plain-text] > [dir = 'rtl'] {
+                    if (!rtl_header) { padding-top: 0.8rem i }
+                    padding-bottom: 0.8rem i
+                }
+                .selectable-text.invisible-space[dir = 'rtl'] {
+                    > span[class] { display: unset i }
+                    @supports (-moz-user-select: none) {
+                        &::before { content: unset i }
+                    }
+                }
+                /// Apparently messages with images/videos are treated like
+                /// special snowflakes, so this resets their timestamps.
+                [style *= 'width'], .video-thumb {
+                    + div > .eRacY[dir = 'rtl'] { padding-bottom: 0.8rem i }
+                }
+                /// Remove whitespace for links.
+                .message-text-link::after { content: unset i }
             }
         }
     }
